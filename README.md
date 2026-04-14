@@ -1,42 +1,104 @@
-# Star Type Classification Project
+# Star Type Classification
 
-## Overview
-This project aims to classify different types of stars using various learned data science techniques. The goal is to accurately predict the type of a star based on its physical properties.
+Classify stars into one of six broad types from their physical properties
+using a scikit-learn pipeline. The project exposes a reusable Python
+package, command-line scripts for training and inference, and the
+original exploratory notebook.
 
 ## Dataset
-The dataset includes the following variables for each star:
-- Temperature (in Kelvin)
-- Luminosity (L, in L/Lo)
-- Absolute Magnitude (AM, in Mv)
-- Color (General Color of Spectrum)
-- Spectral Class (O, B, A, F, G, K, M)
-- Type (categorized from 0 to 5):
-  - 0: Red Dwarf
-  - 1: Brown Dwarf
-  - 2: White Dwarf
-  - 3: Main Sequence
-  - 4: Super Giants
-  - 5: Hyper Giants
 
-## Features
-- Data analysis and visualization using libraries like Pandas, Numpy, Seaborn, and Matplotlib.
-- Exploration of star properties through statistical methods.
-- Application of machine learning techniques for classification.
+`Stars.csv` contains 240 stars with the following columns:
 
-## Requirements
-- Python 3.x
-- Libraries: Pandas, Numpy, Seaborn, Matplotlib, Scipy.
+| Column          | Description                                         |
+|-----------------|-----------------------------------------------------|
+| `Temperature`   | Surface temperature in Kelvin                       |
+| `L`             | Luminosity relative to the Sun (L / L\_\u2609)       |
+| `R`             | Radius relative to the Sun (R / R\_\u2609)           |
+| `A_M`           | Absolute magnitude (M\_v)                           |
+| `Color`         | General color of the spectrum                       |
+| `Spectral_Class`| Spectral class (O, B, A, F, G, K, M)                |
+| `Type`          | Target label — 0–5 (see below)                      |
 
-## Installation
-To set up the project environment:
-```bash
-git clone https://github.com/TirtheshJani/star-type-classification.git
-cd star-type-classification
+**Target labels**
+
+| Code | Star type     |
+|------|---------------|
+| 0    | Red Dwarf     |
+| 1    | Brown Dwarf   |
+| 2    | White Dwarf   |
+| 3    | Main Sequence |
+| 4    | Super Giant   |
+| 5    | Hyper Giant   |
+
+## Repository layout
+
+```
+.
+├─ Stars.csv                 # Raw dataset
+├─ StartypeclassificationprojectTirtheshjani.ipynb  # Exploratory analysis
+├─ requirements.txt
+├─ src/
+│  ├─ data_utils.py          # Loading + categorical normalisation
+│  ├─ star_classifier.py     # sklearn pipeline + training/inference
+│  └─ visualize.py           # HR diagram / confusion matrix helpers
+├─ scripts/
+│  ├─ train.py               # CLI: train and persist the pipeline
+│  └─ predict.py             # CLI: classify new rows
+└─ tests/
+   └─ test_data_utils.py
 ```
 
-## Usage
-To run the Jupyter Notebook and view the data analysis and classification process, execute the following command in your terminal:
+## Quick start
 
 ```bash
-jupyter notebook Startypeclassificationproject.ipynb
+git clone https://github.com/TirtheshJani/STARTYPE-CLASSIFICATION-.git
+cd STARTYPE-CLASSIFICATION-
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
 ```
+
+### Train the classifier
+
+```bash
+python -m scripts.train --dataset Stars.csv --model models/star_classifier.joblib
+```
+
+This prints test-set accuracy, 5-fold cross-validation scores and a
+per-class classification report, then saves the fitted pipeline to
+`models/star_classifier.joblib`.
+
+### Predict on new data
+
+```bash
+python -m scripts.predict \
+    --model models/star_classifier.joblib \
+    --input new_stars.csv \
+    --output predictions.csv
+```
+
+The input CSV must provide the six feature columns
+(`Temperature`, `L`, `R`, `A_M`, `Color`, `Spectral_Class`). The output
+adds `predicted_type` (0–5) and `predicted_label` (human-readable name).
+
+### Run the tests
+
+```bash
+pip install pytest
+pytest
+```
+
+## Modelling notes
+
+* Numeric features are standard-scaled; categorical features are one-hot
+  encoded via a `ColumnTransformer`, so the whole flow is reproducible
+  through a single `Pipeline`.
+* The default classifier is `RandomForestClassifier(n_estimators=200)`
+  with a fixed `random_state`. Train / test splits are stratified on the
+  target so every star type is represented in both folds.
+* `src/data_utils.normalize_color` collapses the free-form `Color`
+  column (e.g. "Blue White", "blue-white", "Whitish") into canonical
+  labels, which measurably reduces the one-hot feature space.
+
+## License
+
+This project is released for educational purposes.
